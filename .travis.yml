@@ -1,0 +1,21 @@
+language: go
+dist: trusty
+env:
+  global:
+  - secure: xHh62F6tD1rvR2D31zMzaJnOa2JMbM5F2ZkU7R5RQlxNu6y/jssSk5SBWIqwfko2qZFor+Or++XpbM6+87yLF+++R0gmZ/Qm+Z3dLBalWOnWbQJ89TpPH4oAmB9gEKL57WZzlIFpHp+UtstHsIUL9iPLDHR0Wlr0vCHUErpm09KrB0xdU+CSQ+m2X7toSDcQ11S7zuEoA33cz77NmB0B6St1KOyJDkQbwnhXn8PFm//8YYVDRCW2uT6jKiFrNOd219pNY6I7n2mf42MBzMDnhV+yaScQP5sFezGpfl+IGb5DyfQ19xz1pJAqNIqmubxbJIC+umCdo++uTB0HfYvWn6CWT+d2mTdHUZZvMlGgvjir6EopyT/wb9IB1cO2a50X6SPkwzx+ecDgM3sjIvU1fmg1U7kjNXxaxBto1GEXUSFPahkJVaOiEE09QANTk4vXCU4/BiHIHtdggvoremdVcoEDB9/N9GzStLKcHgfHtYvY8zaE6HNjD9QUX96b5g/zeFm/pCWbbzb1QB6Idf6fZwbL9kuE5cx/zNn8Ynt0ZP2Gv9joCGDLAAzG8hz6aYvALkSABDK1ZS0Lt4TAdD3vHgrURfx3RASxkQQXCY5sBOu46u1Ge//mMq3FXwcSL7v+rHThfIAroBzcKhN5xTpN3uR3Uy8ktIft2ECABfaCo00=
+  - secure: hXuCClQLtTf5pIv1zg4IQswxZgvkIm12rV3iVGRsu84XObQzIH3Lt8YnFvnQoTzKdraExfCu3PXYsGyIarMl9X6xj/Z9Xm/Mi+iIPyKw3NJWPGvk2yWR2GLsxQKtkD9ej46Bx8pmtO7C/P4mmJY4lPveoRAn2BpGzvY701v4GGmHwhLlAbgAp9AqKnyt+7GywTlWQZH6Ey363uPXPFCXHZA2kAEdSPlwcPzrhSw5BxyVHYPe7+RWvKMnX9H8Qkb8BMAcE7AvGr7sADnO4tOJmVr0k4Tq0D6gqG8iUTYcyMN0N6QoEfrg419jc8IyTd1oF2O9ZizfN0TQx41VZY2aW7tNVpb98ZwY8BGKIuq5C9tbSuwT3UlNd1REkIM6+2qzSBjqFgAOqB5pcALG5gipivtsB9afonPPhxYgvqpaZUCvIi+HADVjdqh7M6GrHgtOS6ItrJ1/cDRXfHVZW+eod7rdW0r/srdS6V28wScgbo0ephIXLWeL71mtGtKULIZBssrT5Z1r4HusYN2ucMPmnvchW+Erw2fYmLs9c2QMxsHl9doTMhdr1k1vREiX3VBzO7m67lHHu21efmHIJjhGB2X3vigTG8kVracJBk4GAWly363cnocjBustvnZY0rghZxP1bhekIs2DpwEskWUTsCjTScK7jrHNR8mpjgzLpOA=
+install: true
+
+script:
+- BUILDCMD="docker build" ./hack/build-image.sh
+- docker tag $(docker images | grep -Pi "^cluster-network-operator" | awk '{print $1 ":" $2}') dougbtv/cluster-network-operator
+
+deploy:
+- provider: script
+  on:
+    all_branches: true
+  script: >
+    bash -c '
+    docker login -u "$REGISTRY_USER" -p "$REGISTRY_PASS";
+    docker push dougbtv/cluster-network-operator;
+    echo foo'
