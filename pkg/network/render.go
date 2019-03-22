@@ -1,6 +1,7 @@
 package network
 
 import (
+	"encoding/json"
 	"log"
 	"net"
 	"reflect"
@@ -36,6 +37,13 @@ func Render(conf *operv1.NetworkSpec, manifestDir string) ([]*uns.Unstructured, 
 
 	// render additional networks
 	o, err = RenderAdditionalNetworks(conf, manifestDir)
+	if err != nil {
+		return nil, err
+	}
+	objs = append(objs, o...)
+
+	// render additional networks
+	o, err = RenderDHCP(conf, manifestDir)
 	if err != nil {
 		return nil, err
 	}
@@ -317,4 +325,85 @@ func RenderMultus(conf *operv1.NetworkSpec, manifestDir string) ([]*uns.Unstruct
 	}
 	out = append(out, objs...)
 	return out, nil
+}
+
+// RenderDHCP generates the manifests for the reference DHCP CNI plugin running as a daemon
+func RenderDHCP(conf *operv1.NetworkSpec, manifestDir string) ([]*uns.Unstructured, error) {
+
+	log.Printf("!bang NetworkSpec: %+v", conf)
+
+	// This isn't useful with Multinetwork.
+	if *conf.DisableMultiNetwork {
+		return nil, nil
+	}
+
+	renderdhcp := false
+
+	// Look and see if we have an AdditionalNetworks
+	log.Printf("!bang AdditionalNetworks: %+v", conf.AdditionalNetworks)
+	if conf.AdditionalNetworks != nil {
+
+		for _, addnet := range conf.AdditionalNetworks {
+
+			log.Printf("!bang each addnet: %+v", addnet)
+			// Parse the RawCNIConfig
+			var rawConfig map[string]interface{}
+			var err error
+
+			// if *conf.AdditionalNetworks.Name == "" {
+			// 	out = append(out, errors.Errorf("Additional Network Name cannot be nil"))
+			// }
+
+			confBytes := []byte(addnet.RawCNIConfig)
+			err = json.Unmarshal(confBytes, &rawConfig)
+			if err != nil {
+				log.Printf("WARNING: Not rendering DHCP daemonset, failed to Unmarshal RawCNIConfig: %v", confBytes)
+				return nil, nil
+			}
+
+			// Cycle through the IPAM keys, and determine if the type is dhcp
+			ipam := rawConfig["ipam"].(map[string]interface{})
+			for key, value := range ipam {
+				if key == "type" {
+					if value.(string) == "dhcp" {
+						log.Printf("!bang FOUND DHCP IN rawConfig.")
+						renderdhcp = true
+						break
+					}
+				}
+			}
+
+			if renderdhcp == true {
+				break
+			}
+
+		}
+
+	}
+
+	// TODO: Uncomment this.
+	// Check if MacVlanConfig uses DHCP, in which case we render the dhcp daemonset.
+	// if conf.MacVlanConfig != nil {
+	// 	if conf.MacVlanConfig.Ipam == "dhcp" {
+	// 		renderdhcp = true
+	// 	}
+	// }
+
+	log.Printf("!bang Last second renderdhcp check: %v", renderdhcp)
+	if renderdhcp == true {
+		var err error
+		out := []*uns.Unstructured{}
+		objs := []*uns.Unstructured{}
+
+		objs, err = renderDHCPDaemon(manifestDir)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, objs...)
+		return out, nil
+	}
+
+	// No additional networks defined.
+	return nil, nil
+
 }
