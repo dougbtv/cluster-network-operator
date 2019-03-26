@@ -27,7 +27,6 @@ spec:
         beta.kubernetes.io/os: linux
       tolerations:
       - operator: Exists
-      # serviceAccountName: dhcp
       initContainers:
       - name: cni-plugins-supported
         image: {{.CNIPluginsSupportedImage}}
@@ -41,20 +40,13 @@ spec:
       containers:
       - name: dhcp-daemon
         # Based on: https://github.com/s1061123/cni-dhcp-daemon/blob/master/Dockerfile
-        image: nfvpe/containernetworking-plugins
+        image: {{.CNIPluginsSupportedImage}}
         imagePullPolicy: Always
         command: ["/usr/src/plugins/bin/dhcp"]
         args:
         - "daemon"
         - "-hostprefix"
         - "/host"
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "50Mi"
-          limits:
-            cpu: "100m"
-            memory: "50Mi"
         securityContext:
           privileged: true
         volumeMounts:

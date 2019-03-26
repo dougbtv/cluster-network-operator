@@ -53,7 +53,7 @@ var DHCPConfig = operv1.Network{
 	},
 }
 
-// TestRenderNoDHCP tests a rendering WITHOUT the DHCP daemonset.
+// TestRenderNoDHCP tests a rendering with the DHCP daemonset.
 func TestRenderWithDHCP(t *testing.T) {
 	g := NewGomegaWithT(t)
 

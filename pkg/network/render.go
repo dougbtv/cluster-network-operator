@@ -42,7 +42,7 @@ func Render(conf *operv1.NetworkSpec, manifestDir string) ([]*uns.Unstructured, 
 	}
 	objs = append(objs, o...)
 
-	// render additional networks
+	// render DHCP daemonset
 	o, err = RenderDHCP(conf, manifestDir)
 	if err != nil {
 		return nil, err
