@@ -330,8 +330,6 @@ func RenderMultus(conf *operv1.NetworkSpec, manifestDir string) ([]*uns.Unstruct
 // RenderDHCP generates the manifests for the reference DHCP CNI plugin running as a daemon
 func RenderDHCP(conf *operv1.NetworkSpec, manifestDir string) ([]*uns.Unstructured, error) {
 
-	log.Printf("!bang NetworkSpec: %+v", conf)
-
 	// This isn't useful with Multinetwork.
 	if *conf.DisableMultiNetwork {
 		return nil, nil
@@ -340,19 +338,13 @@ func RenderDHCP(conf *operv1.NetworkSpec, manifestDir string) ([]*uns.Unstructur
 	renderdhcp := false
 
 	// Look and see if we have an AdditionalNetworks
-	log.Printf("!bang AdditionalNetworks: %+v", conf.AdditionalNetworks)
 	if conf.AdditionalNetworks != nil {
 
 		for _, addnet := range conf.AdditionalNetworks {
 
-			log.Printf("!bang each addnet: %+v", addnet)
 			// Parse the RawCNIConfig
 			var rawConfig map[string]interface{}
 			var err error
-
-			// if *conf.AdditionalNetworks.Name == "" {
-			// 	out = append(out, errors.Errorf("Additional Network Name cannot be nil"))
-			// }
 
 			confBytes := []byte(addnet.RawCNIConfig)
 			err = json.Unmarshal(confBytes, &rawConfig)
@@ -362,13 +354,14 @@ func RenderDHCP(conf *operv1.NetworkSpec, manifestDir string) ([]*uns.Unstructur
 			}
 
 			// Cycle through the IPAM keys, and determine if the type is dhcp
-			ipam := rawConfig["ipam"].(map[string]interface{})
-			for key, value := range ipam {
-				if key == "type" {
-					if value.(string) == "dhcp" {
-						log.Printf("!bang FOUND DHCP IN rawConfig.")
-						renderdhcp = true
-						break
+			if rawConfig["ipam"] != nil {
+				ipam := rawConfig["ipam"].(map[string]interface{})
+				for key, value := range ipam {
+					if key == "type" {
+						if value.(string) == "dhcp" {
+							renderdhcp = true
+							break
+						}
 					}
 				}
 			}
@@ -389,7 +382,6 @@ func RenderDHCP(conf *operv1.NetworkSpec, manifestDir string) ([]*uns.Unstructur
 	// 	}
 	// }
 
-	log.Printf("!bang Last second renderdhcp check: %v", renderdhcp)
 	if renderdhcp == true {
 		var err error
 		out := []*uns.Unstructured{}
