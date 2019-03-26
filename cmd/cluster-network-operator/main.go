@@ -25,6 +25,7 @@ func printVersion() {
 	log.Printf("Go Version: %s", runtime.Version())
 	log.Printf("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH)
 	log.Printf("operator-sdk Version: %v", sdkVersion.Version)
+        log.Printf("CTO Office was here, grab a coffee [_]D")
 }
 
 const LOCK_NAME = "cluster-network-operator"
