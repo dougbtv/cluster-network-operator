@@ -58,7 +58,7 @@ func TestRenderNetworkMetricsDaemon(t *testing.T) {
 	g.Expect(objs).To(ContainElement(HaveKubernetesID("ServiceMonitor", "openshift-multus", "monitor-network")))
 	g.Expect(objs).To(ContainElement(HaveKubernetesID("Role", "openshift-multus", "prometheus-k8s")))
 	g.Expect(objs).To(ContainElement(HaveKubernetesID("RoleBinding", "openshift-multus", "prometheus-k8s")))
-	g.Expect(objs).To(ContainElement(HaveKubernetesID("CronJob", "openshift-multus", "ip-reconciler")))
+	g.Expect(objs).To(ContainElement(HaveKubernetesID("Deployment", "openshift-multus", "ip-reconciler")))
 
 	// Make sure every obj is reasonable:
 	// - it is supported

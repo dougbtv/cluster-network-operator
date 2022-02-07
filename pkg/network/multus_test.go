@@ -57,7 +57,7 @@ func TestRenderMultus(t *testing.T) {
 	g.Expect(objs).To(ContainElement(HaveKubernetesID("ServiceAccount", "openshift-multus", "multus")))
 	g.Expect(objs).To(ContainElement(HaveKubernetesID("ClusterRoleBinding", "", "multus")))
 	g.Expect(objs).To(ContainElement(HaveKubernetesID("DaemonSet", "openshift-multus", "multus")))
-	g.Expect(objs).To(ContainElement(HaveKubernetesID("CronJob", "openshift-multus", "ip-reconciler")))
+	g.Expect(objs).To(ContainElement(HaveKubernetesID("Deployment", "openshift-multus", "ip-reconciler")))
 
 	// Make sure every obj is reasonable:
 	// - it is supported

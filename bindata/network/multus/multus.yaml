@@ -474,41 +474,50 @@ spec:
             name: cni-binary-copy-script
             defaultMode: 0744
 ---
-apiVersion: batch/v1
-kind: CronJob
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: ip-reconciler
   namespace: openshift-multus
   labels:
-    tier: node
-    app: whereabouts
+    app: ip-reconciler
 spec:
-  # reconcile loop every 15 minutes, starting at the top of the hour
-  schedule: "*/15 * * * *"
-  concurrencyPolicy: Replace
-  successfulJobsHistoryLimit: 0
-  jobTemplate:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: ip-reconciler
+  template:
+    metadata:
+      labels:
+        app: ip-reconciler
     spec:
-      backoffLimit: 0
-      template:
-        spec:
-          priorityClassName: "system-cluster-critical"
-          serviceAccountName: multus
-          containers:
-            - name: whereabouts
-              image: {{.WhereaboutsImage}}
-              resources:
-                requests:
-                  cpu: "25m"
-                  memory: "25Mi"
-              command:
-              - /ip-reconciler
-              - -log-level=verbose
-              volumeMounts:
-                - name: cni-net-dir
-                  mountPath: /host/etc/cni/net.d
-          volumes:
+      priorityClassName: "system-cluster-critical"
+      serviceAccountName: multus
+      containers:
+        - name: whereabouts
+          image: {{.WhereaboutsImage}}
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "25Mi"
+          command:
+          - /bin/bash
+          - -c
+          - |
+            #!/bin/bash
+            echo "Beginning reconciler loop (re-runs every 15 minutes)"
+            while :; do /ip-reconciler -log-level=verbose; sleep 15m; done 
+          volumeMounts:
             - name: cni-net-dir
-              hostPath:
-                path: {{ .SystemCNIConfDir }}
-          restartPolicy: Never
+              mountPath: /host/etc/cni/net.d
+          env:
+          - name: KUBERNETES_SERVICE_PORT
+            value: "{{.KUBERNETES_SERVICE_PORT}}"
+          - name: KUBERNETES_SERVICE_HOST
+            value: "{{.KUBERNETES_SERVICE_HOST}}"
+      volumes:
+        - name: cni-net-dir
+          hostPath:
+            path: {{ .SystemCNIConfDir }}
