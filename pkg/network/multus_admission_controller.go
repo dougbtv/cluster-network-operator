@@ -22,6 +22,8 @@ func renderMultusAdmissonControllerConfig(manifestDir string, externalControlPla
 	data.Data["KubeRBACProxyImage"] = os.Getenv("KUBE_RBAC_PROXY_IMAGE")
 	data.Data["ExternalControlPlane"] = externalControlPlane
 	data.Data["Replicas"] = replicas
+	// Hypershift
+	// data.Data["MCName"] = "management"
 
 	manifests, err := render.RenderDir(filepath.Join(manifestDir, "network/multus-admission-controller"), &data)
 	if err != nil {

@@ -11,6 +11,7 @@ metadata:
       This deployment launches the Multus admisson controller component.
     release.openshift.io/version: "{{.ReleaseVersion}}"
     networkoperator.openshift.io/non-critical: ""
+    network.operator.openshift.io/cluster-name: "management"
 spec:
   replicas: {{.Replicas}}
   selector:
