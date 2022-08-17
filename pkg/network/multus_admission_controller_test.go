@@ -56,5 +56,10 @@ func TestRenderMultusAdmissionController(t *testing.T) {
 	g.Expect(objs).To(ContainElement(HaveKubernetesID("ClusterRole", "", "multus-admission-controller-webhook")))
 	g.Expect(objs).To(ContainElement(HaveKubernetesID("ClusterRoleBinding", "", "multus-admission-controller-webhook")))
 	g.Expect(objs).To(ContainElement(HaveKubernetesID("ValidatingWebhookConfiguration", "", names.MULTUS_VALIDATING_WEBHOOK)))
-	g.Expect(objs).To(ContainElement(HaveKubernetesID("Deployment", "openshift-multus", "multus-admission-controller")))
+	hsc := NewHyperShiftConfig()
+	usenamespace := "openshift-multus"
+	if hsc.Enabled {
+		usenamespace = hsc.Namespace
+	}
+	g.Expect(objs).To(ContainElement(HaveKubernetesID("Deployment", usenamespace, "multus-admission-controller")))
 }

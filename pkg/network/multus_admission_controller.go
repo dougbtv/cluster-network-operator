@@ -24,6 +24,12 @@ func renderMultusAdmissonControllerConfig(manifestDir string, externalControlPla
 	data.Data["Replicas"] = replicas
 	// Hypershift
 	// data.Data["MCName"] = "management"
+	hsc := NewHyperShiftConfig()
+	if hsc.Enabled {
+		data.Data["HostedClusterNamespace"] = hsc.Namespace
+	} else {
+		data.Data["HostedClusterNamespace"] = "openshift-multus"
+	}
 
 	manifests, err := render.RenderDir(filepath.Join(manifestDir, "network/multus-admission-controller"), &data)
 	if err != nil {
