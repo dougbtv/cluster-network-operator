@@ -27,6 +27,8 @@ type Object interface {
 // GetClusterName returns the names.ClusterNameAnnotation annotation for the specified object.
 // If the annotation does not exist it will return an empty string.
 func GetClusterName(obj Object) string {
+	// !bang
+	// is this a circular reference of some sort?
 	return obj.GetAnnotations()[names.ClusterNameAnnotation]
 }
 
@@ -37,7 +39,9 @@ func GetClusterName(obj Object) string {
 func ApplyObject(ctx context.Context, client cnoclient.Client, obj Object, subcontroller string) error {
 	name := obj.GetName()
 	namespace := obj.GetNamespace()
+	// !bang heres where we create the client.
 	clusterClient := client.ClientFor(GetClusterName(obj))
+	fmt.Printf("!bang clusterClient: %+v \n", clusterClient)
 	if clusterClient == nil {
 		return fmt.Errorf("object %s/%s specifies unknown cluster %s", namespace, name, GetClusterName(obj))
 	}
@@ -68,6 +72,10 @@ func ApplyObject(ctx context.Context, client cnoclient.Client, obj Object, subco
 		if err != nil {
 			return fmt.Errorf("failed to retrieve copy-from object: %w", err)
 		}
+	}
+
+	if objDesc == "(apps/v1, Kind=Deployment) openshift-multus/multus-admission-controller" {
+		log.Printf("!bang")
 	}
 
 	// determine resource

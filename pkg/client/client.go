@@ -211,6 +211,8 @@ func (c *OperatorClusterClient) CRClient() crclient.Client {
 	return c.crclient
 }
 
+// !bang this "c" might be nil here. Hrmmm.
+// !bang looks like a smoking gun.
 func (c *OperatorClusterClient) RESTMapper() meta.RESTMapper {
 	return c.restMapper
 }
