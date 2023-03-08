@@ -522,7 +522,6 @@ spec:
             name: {{.CniSysctlAllowlist}}
             defaultMode: 0744
 {{if .RenderIpReconciler}}
-
 ---
 apiVersion: apps/v1
 kind: DaemonSet
