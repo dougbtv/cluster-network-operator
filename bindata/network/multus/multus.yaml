@@ -430,13 +430,14 @@ spec:
             EOF
 
             # Kubeconfig file for Whereabouts CNI plugin.
+            # previous: "reconciler_cron_expression": "30 4 * * *",
             cat > $WHEREABOUTS_GLOBALCONFIG <<EOF
             {
               "datastore": "kubernetes",
               "kubernetes": {
                 "kubeconfig": "/etc/kubernetes/cni/net.d/whereabouts.d/whereabouts.kubeconfig"
               },
-              "reconciler_cron_expression": "30 4 * * *",
+              "reconciler_cron_file": "/etc/kubernetes/cni/net.d/whereabouts.d/whereabouts.cron",
               "log_level": "debug"
             }
             EOF
