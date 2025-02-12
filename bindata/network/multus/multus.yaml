@@ -397,6 +397,23 @@ spec:
           hostPath:
             path: /etc/kubernetes
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: whereabouts-config
+  namespace: openshift-multus
+data:
+  whereabouts.conf: |
+    {
+      "datastore": "kubernetes",
+      "kubernetes": {
+        "kubeconfig": "/etc/kubernetes/cni/net.d/whereabouts.d/whereabouts.kubeconfig"
+      },
+      "reconciler_cron_expression": "30 4 * * *",
+      "log_level": "debug",
+      "log_file": "/tmp/whereabouts.log"
+    }
+---
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
@@ -447,6 +464,8 @@ spec:
           name: os-release
           readOnly: true
         env:
+        - name: CHEESE
+          value: "burger"
         - name: RHEL8_SOURCE_DIRECTORY
           value: "/usr/src/egress-router-cni/rhel8/bin/"
         - name: RHEL9_SOURCE_DIRECTORY
@@ -516,7 +535,8 @@ spec:
         - name: DEFAULT_SOURCE_DIRECTORY
           value: "/usr/src/route-override/bin/"
       - name: whereabouts-cni-bincopy
-        image: {{.WhereaboutsImage}}
+        #quay
+        image: quay.io/bpickard/node-slice-controller
         command: ["/entrypoint/cnibincopy.sh"]
         resources:
           requests:
@@ -539,7 +559,8 @@ spec:
         - name: DEFAULT_SOURCE_DIRECTORY
           value: "/usr/src/whereabouts/bin/"
       - name: whereabouts-cni
-        image: {{.WhereaboutsImage}}
+        #quay
+        image: quay.io/bpickard/node-slice-controller
         command:
           - /bin/sh
           - -c
@@ -609,17 +630,7 @@ spec:
             current-context: whereabouts-context
             EOF
 
-            # Kubeconfig file for Whereabouts CNI plugin.
-            cat > $WHEREABOUTS_GLOBALCONFIG <<EOF
-            {
-              "datastore": "kubernetes",
-              "kubernetes": {
-                "kubeconfig": "/etc/kubernetes/cni/net.d/whereabouts.d/whereabouts.kubeconfig"
-              },
-              "reconciler_cron_expression": "30 4 * * *",
-              "log_level": "debug"
-            }
-            EOF
+            cp /host/copy/whereabouts.conf $WHEREABOUTS_GLOBALCONFIG
             chmod 600 $WHEREABOUTS_GLOBALCONFIG
 
             else
@@ -650,6 +661,9 @@ spec:
           name: cnibin
         - name: system-cni-dir
           mountPath: /host/etc/cni/net.d
+        - name: whereabouts-configmap
+          mountPath: /host/copy/whereabouts.conf
+          subPath: whereabouts.conf
         env:
         - name: KUBERNETES_SERVICE_PORT
           value: "{{.KUBERNETES_SERVICE_PORT}}"
@@ -704,6 +718,12 @@ spec:
           configMap:
             name: {{.CniSysctlAllowlist}}
             defaultMode: 0744
+        - name: whereabouts-configmap
+          configMap:
+            name: whereabouts-config
+            items:
+            - key: whereabouts.conf
+              path: whereabouts.conf
 {{if .RenderIpReconciler}}
 ---
 apiVersion: apps/v1
@@ -746,7 +766,8 @@ spec:
           - -c
           - >
             /usr/src/whereabouts/bin/entrypoint.sh -log-level debug
-        image: {{.WhereaboutsImage}}
+        #quay
+        image: quay.io/bpickard/node-slice-controller
         resources:
           requests:
             cpu: "50m"
@@ -784,3 +805,71 @@ spec:
             - key: reconciler_cron_expression
               path: config
 {{- end}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whereabouts-controller
+  namespace: openshift-multus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: whereabouts-controller
+  template:
+    metadata:
+      labels:
+        app: whereabouts-controller
+    spec:
+      containers:
+        - command:
+            - /usr/src/whereabouts/bin/node-slice-controller
+          env:
+            - name: NODENAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+            - name: WHEREABOUTS_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+          image: quay.io/bpickard/node-slice-controller
+          name: whereabouts
+          resources:
+            limits:
+              cpu: 100m
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+            - mountPath: /host/opt/cni/bin
+              name: cnibin
+            - mountPath: /host/etc/cni/net.d
+              name: cni-net-dir
+            - name: whereabouts-configmap
+              mountPath: /host/etc/cni/net.d/whereabouts.d/whereabouts.conf
+              subPath: whereabouts.conf
+      preemptionPolicy: PreemptLowerPriority
+      priorityClassName: "system-node-critical"
+      securityContext: {}
+      serviceAccountName: multus-ancillary-tools
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - hostPath:
+            path: {{ .CNIBinDir }}
+            type: Directory          
+          name: cnibin
+        - hostPath:
+            path: {{ .SystemCNIConfDir }}
+            type: Directory          
+          name: cni-net-dir
+        - name: whereabouts-configmap
+          configMap:
+            name: whereabouts-config
+            items:
+            - key: whereabouts.conf
+              path: whereabouts.conf
