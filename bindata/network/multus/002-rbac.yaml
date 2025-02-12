@@ -235,6 +235,8 @@ rules:
   - "nodeslicepools"
   - "nodeslicepools/status"
   - "nodeslicepools/finalizers"
+  - "ippools"
+  - "overlappingrangeipreservations"
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 - apiGroups: [""]
   resources:
